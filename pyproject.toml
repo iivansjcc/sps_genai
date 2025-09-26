@@ -1,0 +1,20 @@
+[project]
+name = "sps-genai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "app>=0.0.1",
+    "en-core-web-lg",
+    "fastapi[standard]>=0.117.1",
+    "numpy>=2.3.3",
+    "pydantic>=2.11.9",
+    "query>=0.1.4",
+    "spacy>=3.8.7",
+    "typing>=3.10.0.0",
+    "uvicorn>=0.36.0",
+]
+
+[tool.uv.sources]
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0.tar.gz" }
