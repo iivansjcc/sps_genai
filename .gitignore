@@ -5,3 +5,5 @@ checkpoints/
 .env
 .ipynb_checkpoints/
 
+Assignment2/data/cifar10/
+*.tar.gz
