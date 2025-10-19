@@ -11,3 +11,11 @@ Assignment2/data/cifar10/
 *.tar.gz
 Assignment2/data/cifar10/
 *.tar.gz
+Assignment2/data/cifar10/
+Assignment2/data/
+checkpoints/
+__pycache__/
+*.tar.gz
+*.pth
+*.pt
+.DS_Store
