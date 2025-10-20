@@ -1,98 +1,104 @@
 import argparse
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 
-from helper_lib import (
-    get_loaders, get_model, train_model, evaluate_model,
-    save_model, print_model_summary,
-)
+from helper_lib import get_model
+from helper_lib.data_loader import get_cifar10_loaders
+
+
+def pick_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    try:
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "cpu"
+
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Train/Evaluate CNN or FCNN on ImageFolder data")
-    # data
-    p.add_argument("--train_dir", type=str, default="data/train", help="Path to training data")
-    p.add_argument("--test_dir",  type=str, default="data/test",  help="Path to test/val data")
-    p.add_argument("--img_size",  type=int, default=32, help="Resize images to this square size")
-    p.add_argument("--batch_size", type=int, default=64)
-    p.add_argument("--num_workers", type=int, default=2)
-    # model
+    p = argparse.ArgumentParser("Train EnhancedCNN on CIFAR-10")
     p.add_argument("--model", type=str, default="enhancedcnn",
-                   choices=["fcnn", "cnn", "enhancedcnn"])
-    p.add_argument("--num_classes", type=int, default=10)
-    # train
+                   choices=["enhancedcnn", "simplecnn", "fcnn"])
+    p.add_argument("--img_size", type=int, default=64)
     p.add_argument("--epochs", type=int, default=5)
+    p.add_argument("--batch_size", type=int, default=64)
+    p.add_argument("--num_workers", type=int, default=0)
     p.add_argument("--lr", type=float, default=1e-3)
-    p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    p.add_argument("--max_grad_norm", type=float, default=None, help="Gradient clipping (None to disable)")
-    # save
-    p.add_argument("--save_path", type=str, default="checkpoints/model.pth")
-    p.add_argument("--save_with_timestamp", action="store_true")
-    # misc
-    p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--log_every", type=int, default=1)
-    p.add_argument("--eval_during_train", action="store_true",
-                   help="Use test_dir as val_loader to report val loss/acc during training")
+    p.add_argument("--device", type=str, default=pick_device())
+    p.add_argument("--ckpt", type=str, default="checkpoints/model.pth")
     return p.parse_args()
 
-def set_seed(seed: int = 42):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    import random, numpy as np
-    random.seed(seed)
-    np.random.seed(seed)
+
+def accuracy(logits, targets):
+    preds = logits.argmax(1)
+    return (preds == targets).float().mean().item()
+
 
 def main():
     args = parse_args()
-    set_seed(args.seed)
+    device = torch.device(args.device)
+    print(f"Using device: {device}")
 
-    # 1) Data
-    normalize_mean = (0.485, 0.456, 0.406)
-    normalize_std  = (0.229, 0.224, 0.225)
-    tfm = transforms.Compose([
-        transforms.Resize((64, 64)),
-        transforms.ToTensor(),
-        transforms.Normalize(normalize_mean, normalize_std),
-    ])
+    # 1) Load CIFAR-10 explicitly
+    train_loader, test_loader = get_cifar10_loaders(
+        batch_size=args.batch_size,
+        img_size=args.img_size,
+        num_workers=args.num_workers,
+        pin_memory=(args.device.startswith("cuda")),
+    )
 
-    train_ds = datasets.CIFAR10(root="data/cifar10", train=True, download=True, transform=tfm)
-    test_ds  = datasets.CIFAR10(root="data/cifar10", train=False, download=True, transform=tfm)
-    train_loader = DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=2)
-    test_loader  = DataLoader(test_ds,  batch_size=64, shuffle=False, num_workers=2)
+    # 2) Auto-detect number of classes
+    class_names = getattr(train_loader.dataset, "classes", [])
+    num_classes = len(class_names) if class_names else 10
+    print(f"Detected {num_classes} classes: {class_names}")
 
-    # --- Auto-detect number of classes from the training dataset ---
-    if hasattr(train_ds, "classes"):
-        args.num_classes = len(train_ds.classes)
-        print(f"Detected {args.num_classes} classes: {train_ds.classes}")
-    else:
-        print(f"Warning: could not detect classes; using args.num_classes={args.num_classes}")
-
-    # 2) Model
-    model = get_model(args.model, num_classes=args.num_classes)
-    print_model_summary(model)
-
-    # 3) Optim/criterion
+    # 3) Build model
+    model = get_model(args.model, num_classes=num_classes).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    # 4) Train
-    val_loader = test_loader if args.eval_during_train else None
-    model, history = train_model(
-        model, train_loader, criterion, optimizer,
-        device=args.device, epochs=args.epochs,
-        val_loader=val_loader, max_grad_norm=args.max_grad_norm,
-        log_every=args.log_every, return_history=True
-    )
+    # 4) Train loop (simple & self-contained)
+    model.train()
+    for epoch in range(1, args.epochs + 1):
+        running_loss, running_acc, n_batches = 0.0, 0.0, 0
+        for x, y in train_loader:
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
+            logits = model(x)
+            loss = criterion(logits, y)
+            loss.backward()
+            optimizer.step()
 
-    # 5) Evaluate (final on test set)
-    test_loss, test_acc = evaluate_model(model, test_loader, criterion, device=args.device)
-    print(f"\nFinal Test → loss: {test_loss:.4f} | acc: {test_acc:.2%}")
+            running_loss += loss.item()
+            running_acc += accuracy(logits.detach(), y)
+            n_batches += 1
 
-    # 6) Save checkpoint
-    saved = save_model(model, args.save_path, with_timestamp=args.save_with_timestamp)
-    print(f"Model saved to: {saved}")
+        print(f"Epoch {epoch:03d}: "
+              f"train_loss={running_loss/n_batches:.4f} "
+              f"train_acc={running_acc/n_batches:.4f}")
+
+        # quick eval each epoch
+        model.eval()
+        with torch.no_grad():
+            val_loss, val_acc, n = 0.0, 0.0, 0
+            for x, y in test_loader:
+                x, y = x.to(device), y.to(device)
+                logits = model(x)
+                val_loss += criterion(logits, y).item()
+                val_acc += accuracy(logits, y)
+                n += 1
+        print(f"           val_loss={val_loss/n:.4f} val_acc={val_acc/n:.4f}")
+        model.train()
+
+    # 5) Save checkpoint (what the API loads)
+    Path("checkpoints").mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), args.ckpt)
+    print(f"Saved model to {args.ckpt}")
+
 
 if __name__ == "__main__":
     main()

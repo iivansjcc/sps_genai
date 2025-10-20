@@ -2,6 +2,45 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
+
+def get_cifar10_loaders(
+    batch_size: int = 64,
+    img_size: int = 32,
+    num_workers: int = 2,
+    pin_memory: bool = True,
+):
+    """
+    Load CIFAR-10 dataset explicitly.
+    """
+    normalize_mean = (0.485, 0.456, 0.406)
+    normalize_std = (0.229, 0.224, 0.225)
+
+    train_tfm = transforms.Compose([
+        transforms.Resize((img_size, img_size)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ToTensor(),
+        transforms.Normalize(normalize_mean, normalize_std),
+    ])
+    test_tfm = transforms.Compose([
+        transforms.Resize((img_size, img_size)),
+        transforms.ToTensor(),
+        transforms.Normalize(normalize_mean, normalize_std),
+    ])
+
+    train_ds = datasets.CIFAR10(root="data/cifar10", train=True, download=True, transform=train_tfm)
+    test_ds = datasets.CIFAR10(root="data/cifar10", train=False, download=True, transform=test_tfm)
+
+    train_loader = DataLoader(
+        train_ds, batch_size=batch_size, shuffle=True,
+        num_workers=num_workers, pin_memory=pin_memory
+    )
+    test_loader = DataLoader(
+        test_ds, batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=pin_memory
+    )
+
+    return train_loader, test_loader
+
 def _build_transforms(img_size: int = 32, train: bool = True):
     """
     Compose transforms for 3-channel images.
