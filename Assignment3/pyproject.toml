@@ -1,0 +1,20 @@
+[project]
+name = "assignment3-gan"
+version = "0.1.0"
+description = "GAN on MNIST (Module 6)"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Ivan Sun" }]
+
+# Runtime + training deps
+dependencies = [
+  "torch",
+  "torchvision",
+  "fastapi",
+  "uvicorn",
+  "pillow",
+  "matplotlib",
+]
+
+[tool.uv]
+package = false
