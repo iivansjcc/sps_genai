@@ -1,0 +1,19 @@
+[project]
+name = "assignment4"
+version = "0.1.0"
+description = "Energy model + Diffusion model for CIFAR-10"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+  "torch",
+  "torchvision",
+  "fastapi",
+  "uvicorn",
+  "pillow",
+  "matplotlib",
+  "python-multipart",
+]
+
+[tool.uv]
+package = false
