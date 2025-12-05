@@ -1,0 +1,17 @@
+[project]
+name = "assignment5-gpt2-finetune"
+version = "0.1.0"
+description = "Assignment 5 – fine-tune GPT2 and expose via FastAPI"
+requires-python = ">=3.10"
+
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "transformers>=4.44.0",
+  "datasets",
+  "torch",
+  "accelerate",
+]
+
+[project.scripts]
+train-gpt2 = "train_gpt2:main"
