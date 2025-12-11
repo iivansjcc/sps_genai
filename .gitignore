@@ -9,7 +9,6 @@ FinalProject/outputs/qa-gpt2/checkpoint-2500/
 
 # Large binary weights
 *.pt
-*.safetensors
 
 # Torch dylib (HUGE!)
 FinalProject/.venv/lib/python3.12/site-packages/torch/lib/
