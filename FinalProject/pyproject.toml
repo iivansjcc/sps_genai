@@ -1,0 +1,15 @@
+[project]
+name = "readcheck-final-project"
+version = "0.1.0"
+description = "Reading comprehension quiz API with ChatGPT + local QA model"
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "openai>=1.0.0",
+    "torch",
+    "transformers",
+    "datasets",
+    "accelerate>=0.26.0",
+]

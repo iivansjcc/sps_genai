@@ -1,0 +1,23 @@
+FinalProject/.env
+
+# Virtual environments
+**/.venv/
+
+# Large fine-tuned model checkpoints
+FinalProject/outputs/qa-gpt2/checkpoint-2000/
+FinalProject/outputs/qa-gpt2/checkpoint-2500/
+
+# Large binary weights
+*.pt
+*.safetensors
+
+# Torch dylib (HUGE!)
+FinalProject/.venv/lib/python3.12/site-packages/torch/lib/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+

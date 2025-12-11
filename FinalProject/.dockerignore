@@ -1,0 +1,19 @@
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Git & editor stuff
+.git
+.gitignore
+*.swp
+*.log
+.DS_Store
+
+# Local environment file (don’t bake API keys into image)
+.env
