@@ -24,7 +24,7 @@ git clone --branch FinalProject --single-branch https://github.com/iivansjcc/sps
 
 ### Overview
 
-ReadCheck is a FastAPI-based service that helps instructors generate **reading comprehension quizzes** and **model answers** from arbitrary text passages.
+InsightRead is a FastAPI-based service that helps instructors generate **reading comprehension quizzes** and **model answers** from arbitrary text passages.
 
 The system combines:
 - **OpenAI GPT-4** (via API) for generating multiple-choice questions.
